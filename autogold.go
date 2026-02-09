@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,6 +46,7 @@ func update() bool {
 // If the input value is of type Raw, its contents will be directly used instead of the value being
 // formatted as a Go literal.
 func ExpectFile(t *testing.T, got any, opts ...Option) {
+	t.Helper()
 	dir := testdataDir(opts)
 	fileName := testName(t, opts)
 	outFile := filepath.Join(dir, fileName+".golden")
@@ -124,7 +124,7 @@ func ExpectFile(t *testing.T, got any, opts ...Option) {
 		unlock() // don't hold the lock while we perform IO, diffing, etc. below.
 	}
 
-	want, err := ioutil.ReadFile(outFile)
+	want, err := os.ReadFile(outFile)
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func ExpectFile(t *testing.T, got any, opts ...Option) {
 	isEmptyFile := isRaw && gotString == ""
 	if isEmptyFile && shouldCleanup() {
 		grabLock()
-		os.Remove(outFile)
+		_ = os.Remove(outFile)
 	}
 	if diff != "" {
 		if update() {
@@ -147,7 +147,7 @@ func ExpectFile(t *testing.T, got any, opts ...Option) {
 					t.Fatal(err)
 				}
 			}
-			if err := ioutil.WriteFile(outFile, []byte(gotString), 0o666); err != nil {
+			if err := os.WriteFile(outFile, []byte(gotString), 0o666); err != nil {
 				t.Fatal(err)
 			}
 		}
